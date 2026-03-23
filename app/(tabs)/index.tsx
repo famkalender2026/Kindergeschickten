@@ -1058,16 +1058,17 @@ export default function HomeScreen(): React.JSX.Element {
   }
 
   if (ansicht === "home") {
-    const aktuelleSpracheAnzeige = APP_SPRACHEN.find(
-      (s) => s.code === appSprache,
-    );
     const aktuelleVorleseSpracheAnzeige = SPRACH_OPTIONEN.find(
       (s) => s.code === vorleseSprache,
     );
 
     return (
       <View style={{ flex: 1, backgroundColor: "#0D0625" }}>
-        <View style={[styles.himmel, { height: himmelHoehe }]}>
+        {/* Himmel-Bereich - nur Deko */}
+        <View
+          style={[styles.himmel, { height: himmelHoehe }]}
+          pointerEvents="box-none"
+        >
           <SchwebenderStern x={20} y={20} groesse={14} verzoegerung={0} />
           <SchwebenderStern
             x={width * 0.3}
@@ -1093,9 +1094,11 @@ export default function HomeScreen(): React.JSX.Element {
           <View style={styles.lichtstrahl1} />
           <View style={styles.lichtstrahl2} />
 
+          {/* Einstellungen Button */}
           <TouchableOpacity
-            style={styles.einstellungenBtn}
+            style={[styles.einstellungenBtn, { zIndex: 1000 }]}
             onPress={() => setEinstellungenModal(true)}
+            activeOpacity={0.7}
           >
             <Text style={styles.einstellungenBtnText}>⚙️</Text>
           </TouchableOpacity>
@@ -1105,6 +1108,7 @@ export default function HomeScreen(): React.JSX.Element {
               styles.logoContainer,
               { transform: [{ translateY: logoSchwebAnim }] },
             ]}
+            pointerEvents="none"
           >
             <Text
               style={[
@@ -1121,7 +1125,7 @@ export default function HomeScreen(): React.JSX.Element {
               </Text>
             )}
           </Animated.View>
-          <View style={styles.zauberCharakter}>
+          <View style={styles.zauberCharakter} pointerEvents="none">
             <Animated.Text
               style={[
                 styles.zauberStab,
@@ -1144,7 +1148,7 @@ export default function HomeScreen(): React.JSX.Element {
               <Text style={{ fontSize: 16 }}>✨</Text>
             </View>
           </View>
-          <View style={styles.dekoZeile}>
+          <View style={styles.dekoZeile} pointerEvents="none">
             <Text style={{ fontSize: 22 }}>🏰</Text>
             <Text style={{ fontSize: 18 }}>🌲</Text>
             <Text style={{ fontSize: 24 }}>🌟</Text>
@@ -1153,120 +1157,135 @@ export default function HomeScreen(): React.JSX.Element {
           </View>
         </View>
 
+        {/* Hauptbereich - ALLE BUTTONS SIND HIER KLICKBAR */}
         <View style={styles.hauptBereich}>
-          <TouchableOpacity
-            style={styles.hauptBtn}
-            onPress={() => setAnsicht("formular")}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 20 }}
           >
-            <View style={styles.hauptBtnInnen}>
-              <Text style={styles.hauptBtnEmoji}>📖</Text>
-              <View>
-                <Text style={styles.hauptBtnTitel}>{t.startStory}</Text>
-                <Text style={styles.hauptBtnUnter}>{t.startSub}</Text>
-              </View>
-            </View>
-            <Text style={styles.hauptBtnPfeil}>▶</Text>
-          </TouchableOpacity>
-
-          {fortschritt && (
+            {/* Haupt-Button */}
             <TouchableOpacity
-              style={styles.weiterlesenBtn}
-              onPress={() => setAnsicht("lesen")}
+              style={styles.hauptBtn}
+              onPress={() => setAnsicht("formular")}
+              activeOpacity={0.7}
             >
-              <View style={styles.weiterlesenLinks}>
-                <Text style={{ fontSize: 28 }}>📚</Text>
+              <View style={styles.hauptBtnInnen}>
+                <Text style={styles.hauptBtnEmoji}>📖</Text>
                 <View>
-                  <Text style={styles.weiterlesenTitel}>
-                    {t.continueReading}
-                  </Text>
-                  <Text style={styles.weiterlesenUnter} numberOfLines={1}>
-                    {fortschritt.titel}
-                  </Text>
-                  <Text style={styles.weiterlesenSeite}>
-                    {t.page} {fortschritt.aktuelleSeite + 1} {t.of}{" "}
-                    {fortschritt.gesamtSeiten}
-                  </Text>
+                  <Text style={styles.hauptBtnTitel}>{t.startStory}</Text>
+                  <Text style={styles.hauptBtnUnter}>{t.startSub}</Text>
                 </View>
               </View>
-              <View style={styles.weiterlesenFortschritt}>
-                <View style={styles.weiterlesenBalken}>
-                  <View
-                    style={[
-                      styles.weiterlesenFull,
-                      {
-                        width:
-                          `${((fortschritt.aktuelleSeite + 1) / fortschritt.gesamtSeiten) * 100}%` as any,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.weiterlesenPfeil}>▶</Text>
-              </View>
+              <Text style={styles.hauptBtnPfeil}>▶</Text>
             </TouchableOpacity>
-          )}
 
-          <View style={styles.kachelGrid}>
-            <TouchableOpacity
-              style={[
-                styles.kachel,
-                {
-                  width: kachelBreite,
-                  height: kachelHoehe,
-                  backgroundColor: "#E8A020",
-                },
-              ]}
-              onPress={zufallsGeschichte}
-            >
-              <Text style={styles.kachelEmoji}>🎲</Text>
-              <Text style={styles.kachelTitel}>{t.randomMagic}</Text>
-              <Text style={styles.kachelUnter}>{t.randomSub}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.kachel,
-                {
-                  width: kachelBreite,
-                  height: kachelHoehe,
-                  backgroundColor: "#E74C3C",
-                },
-              ]}
-              onPress={() => router.push("/favoriten")}
-            >
-              <Text style={styles.kachelEmoji}>⭐</Text>
-              <Text style={styles.kachelTitel}>{t.favorites}</Text>
-              <Text style={styles.kachelUnter}>{t.favoritesSub}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.kachel,
-                {
-                  width: kachelBreite,
-                  height: kachelHoehe,
-                  backgroundColor: "#8E44AD",
-                },
-              ]}
-              onPress={() => router.push("/schatz")}
-            >
-              <Text style={styles.kachelEmoji}>💎</Text>
-              <Text style={styles.kachelTitel}>{t.treasure}</Text>
-              <Text style={styles.kachelUnter}>{t.treasureSub}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.kachel,
-                {
-                  width: kachelBreite,
-                  height: kachelHoehe,
-                  backgroundColor: "#2D5016",
-                },
-              ]}
-              onPress={() => router.push("/dashboard")}
-            >
-              <Text style={styles.kachelEmoji}>👨‍👩‍👧</Text>
-              <Text style={styles.kachelTitel}>{t.parents}</Text>
-              <Text style={styles.kachelUnter}>{t.parentsSub}</Text>
-            </TouchableOpacity>
-          </View>
+            {/* Weiterlesen Button */}
+            {fortschritt && (
+              <TouchableOpacity
+                style={styles.weiterlesenBtn}
+                onPress={() => setAnsicht("lesen")}
+                activeOpacity={0.7}
+              >
+                <View style={styles.weiterlesenLinks}>
+                  <Text style={{ fontSize: 28 }}>📚</Text>
+                  <View>
+                    <Text style={styles.weiterlesenTitel}>
+                      {t.continueReading}
+                    </Text>
+                    <Text style={styles.weiterlesenUnter} numberOfLines={1}>
+                      {fortschritt.titel}
+                    </Text>
+                    <Text style={styles.weiterlesenSeite}>
+                      {t.page} {fortschritt.aktuelleSeite + 1} {t.of}{" "}
+                      {fortschritt.gesamtSeiten}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.weiterlesenFortschritt}>
+                  <View style={styles.weiterlesenBalken}>
+                    <View
+                      style={[
+                        styles.weiterlesenFull,
+                        {
+                          width:
+                            `${((fortschritt.aktuelleSeite + 1) / fortschritt.gesamtSeiten) * 100}%` as any,
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.weiterlesenPfeil}>▶</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* Kacheln Grid */}
+            <View style={styles.kachelGrid}>
+              <TouchableOpacity
+                style={[
+                  styles.kachel,
+                  {
+                    width: kachelBreite,
+                    height: kachelHoehe,
+                    backgroundColor: "#E8A020",
+                  },
+                ]}
+                onPress={zufallsGeschichte}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.kachelEmoji}>🎲</Text>
+                <Text style={styles.kachelTitel}>{t.randomMagic}</Text>
+                <Text style={styles.kachelUnter}>{t.randomSub}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.kachel,
+                  {
+                    width: kachelBreite,
+                    height: kachelHoehe,
+                    backgroundColor: "#E74C3C",
+                  },
+                ]}
+                onPress={() => router.push("/favoriten")}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.kachelEmoji}>⭐</Text>
+                <Text style={styles.kachelTitel}>{t.favorites}</Text>
+                <Text style={styles.kachelUnter}>{t.favoritesSub}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.kachel,
+                  {
+                    width: kachelBreite,
+                    height: kachelHoehe,
+                    backgroundColor: "#8E44AD",
+                  },
+                ]}
+                onPress={() => router.push("/schatz")}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.kachelEmoji}>💎</Text>
+                <Text style={styles.kachelTitel}>{t.treasure}</Text>
+                <Text style={styles.kachelUnter}>{t.treasureSub}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.kachel,
+                  {
+                    width: kachelBreite,
+                    height: kachelHoehe,
+                    backgroundColor: "#2D5016",
+                  },
+                ]}
+                onPress={() => router.push("/dashboard")}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.kachelEmoji}>👨‍👩‍👧</Text>
+                <Text style={styles.kachelTitel}>{t.parents}</Text>
+                <Text style={styles.kachelUnter}>{t.parentsSub}</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
 
         {/* Einstellungen Modal */}
@@ -2124,7 +2143,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0E8FF",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    marginTop: -16,
     paddingTop: 16,
     paddingHorizontal: 14,
   },
