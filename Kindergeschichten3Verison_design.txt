@@ -1,0 +1,363 @@
+import React, { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+const GENRE_EMOJI: Record<string, string> = {
+  Abenteuer: "🗺️",
+  Märchen: "🏰",
+  Tiere: "🐾",
+  Weltraum: "🚀",
+  Detektiv: "🔍",
+};
+
+const GENRE_FARBE: Record<string, string> = {
+  Abenteuer: "#FF6B35",
+  Märchen: "#9B59B6",
+  Tiere: "#27AE60",
+  Weltraum: "#2980B9",
+  Detektiv: "#E74C3C",
+};
+
+const CARTOON_CHARAKTER: Record<string, string> = {
+  Abenteuer: "🧭🌲🏔️",
+  Märchen: "🧚‍♀️✨🏰",
+  Tiere: "🐰🦁🐘",
+  Weltraum: "👨‍🚀🌍⭐",
+  Detektiv: "🕵️‍♂️🔎📋",
+};
+
+export default function HomeScreen(): React.JSX.Element {
+  const [alter, setAlter] = useState<string>("5");
+  const [akteure, setAkteure] = useState<string>("");
+  const [genre, setGenre] = useState<string>("Abenteuer");
+  const [geschichte, setGeschichte] = useState<string>("");
+  const [laedt, setLaedt] = useState<boolean>(false);
+
+  const bounce = useRef(new Animated.Value(1)).current;
+  const fadeIn = useRef(new Animated.Value(0)).current;
+
+  const genres: string[] = [
+    "Abenteuer",
+    "Märchen",
+    "Tiere",
+    "Weltraum",
+    "Detektiv",
+  ];
+
+  useEffect(() => {
+    if (laedt) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounce, {
+            toValue: 1.3,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounce, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
+    } else {
+      bounce.setValue(1);
+    }
+  }, [laedt]);
+
+  useEffect(() => {
+    if (geschichte) {
+      Animated.timing(fadeIn, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      fadeIn.setValue(0);
+    }
+  }, [geschichte]);
+
+  const generiereGeschichte = async (): Promise<void> => {
+    setLaedt(true);
+    setGeschichte("");
+    const prompt: string = `Schreibe eine Kindergeschichte auf Deutsch. Alter: ${alter} Jahre. Akteure: ${akteure || "ein kleines Kaninchen"}. Genre: ${genre}. Die Geschichte soll spannend, lehrreich und kindgerecht sein. Gib der Geschichte einen schönen Titel in der ersten Zeile mit ** darum, zum Beispiel **Der mutige Ritter**. Die Geschichte soll ca. 10 Minuten Lesezeit haben. Beginne direkt mit der Geschichte.`;
+    try {
+      const antwort = await fetch(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Bearer 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",
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 2000,
+          }),
+        },
+      );
+      const daten = await antwort.json();
+      setGeschichte(daten.choices[0].message.content);
+    } catch (fehler) {
+      setGeschichte("Ups! Da ist etwas schiefgelaufen. Versuche es nochmal.");
+    }
+    setLaedt(false);
+  };
+
+  const titel = geschichte.match(/\*\*(.*?)\*\*/)?.[1] || "Unsere Geschichte";
+  const text = geschichte.replace(/\*\*(.*?)\*\*/, "").trim();
+  const genreFarbe = GENRE_FARBE[genre] || "#FF6B35";
+
+  return (
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <View style={[styles.header, { backgroundColor: genreFarbe }]}>
+        <Text style={styles.headerEmoji}>{GENRE_EMOJI[genre]}</Text>
+        <Text style={styles.appTitel}>Geschichten-Zauber</Text>
+        <Text style={styles.headerUnter}>Magische Geschichten für dich!</Text>
+      </View>
+
+      {!geschichte ? (
+        <View style={styles.formular}>
+          <View style={styles.karte}>
+            <Text style={styles.karteLabel}>🎂 Wie alt bist du?</Text>
+            <TextInput
+              style={styles.input}
+              value={alter}
+              onChangeText={setAlter}
+              keyboardType="numeric"
+              placeholder="z.B. 5"
+            />
+          </View>
+
+          <View style={styles.karte}>
+            <Text style={styles.karteLabel}>🦸 Wer soll mitspielen?</Text>
+            <TextInput
+              style={styles.input}
+              value={akteure}
+              onChangeText={setAkteure}
+              placeholder="z.B. ein Drache und eine Prinzessin"
+            />
+          </View>
+
+          <View style={styles.karte}>
+            <Text style={styles.karteLabel}>📚 Was für eine Geschichte?</Text>
+            <View style={styles.genreGrid}>
+              {genres.map((g: string) => (
+                <TouchableOpacity
+                  key={g}
+                  style={[
+                    styles.genreChip,
+                    genre === g && {
+                      backgroundColor: GENRE_FARBE[g],
+                      borderColor: GENRE_FARBE[g],
+                    },
+                  ]}
+                  onPress={() => setGenre(g)}
+                >
+                  <Text style={styles.genreEmoji}>{GENRE_EMOJI[g]}</Text>
+                  <Text
+                    style={[
+                      styles.genreText,
+                      genre === g && styles.genreTextAktiv,
+                    ]}
+                  >
+                    {g}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {laedt ? (
+            <View style={styles.ladeBox}>
+              <Animated.Text
+                style={[styles.ladeEmoji, { transform: [{ scale: bounce }] }]}
+              >
+                {CARTOON_CHARAKTER[genre]}
+              </Animated.Text>
+              <Text style={styles.ladeText}>
+                Die Geschichte wird gezaubert...
+              </Text>
+              <ActivityIndicator
+                color={genreFarbe}
+                size="large"
+                style={{ marginTop: 10 }}
+              />
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: genreFarbe }]}
+              onPress={generiereGeschichte}
+            >
+              <Text style={styles.buttonText}>✨ Geschichte erfinden!</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <Animated.View style={[styles.buchContainer, { opacity: fadeIn }]}>
+          <View style={[styles.buchHeader, { backgroundColor: genreFarbe }]}>
+            <Text style={styles.buchCharakter}>{CARTOON_CHARAKTER[genre]}</Text>
+            <Text style={styles.buchTitel}>{titel}</Text>
+            <Text style={styles.buchGenre}>{genre}</Text>
+          </View>
+
+          <View style={styles.buchSeite}>
+            <Text style={styles.anfuehrung}>"</Text>
+            <Text style={styles.buchText}>{text}</Text>
+            <Text style={styles.ende}>~ Ende ~</Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.neueButton, { backgroundColor: genreFarbe }]}
+            onPress={() => setGeschichte("")}
+          >
+            <Text style={styles.neueButtonText}>
+              📖 Neue Geschichte erfinden!
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#FFF9F0" },
+  header: {
+    padding: 30,
+    alignItems: "center",
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  headerEmoji: { fontSize: 50, marginBottom: 8 },
+  appTitel: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "white",
+    textShadowColor: "rgba(0,0,0,0.2)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  headerUnter: { fontSize: 14, color: "rgba(255,255,255,0.9)", marginTop: 4 },
+  formular: { padding: 16 },
+  karte: {
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  karteLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 2,
+    borderColor: "#FFD700",
+    borderRadius: 14,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: "#FFFEF5",
+  },
+  genreGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  genreChip: {
+    borderWidth: 2,
+    borderColor: "#DDD",
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "white",
+    alignItems: "center",
+    minWidth: 90,
+  },
+  genreEmoji: { fontSize: 24, marginBottom: 2 },
+  genreText: { fontSize: 12, fontWeight: "600", color: "#666" },
+  genreTextAktiv: { color: "white" },
+  ladeBox: {
+    alignItems: "center",
+    padding: 30,
+    backgroundColor: "white",
+    borderRadius: 20,
+    margin: 8,
+  },
+  ladeEmoji: { fontSize: 50, marginBottom: 10 },
+  ladeText: { fontSize: 16, color: "#666", fontStyle: "italic" },
+  button: {
+    borderRadius: 20,
+    padding: 18,
+    alignItems: "center",
+    marginTop: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  buttonText: { color: "white", fontSize: 20, fontWeight: "bold" },
+  buchContainer: { margin: 12 },
+  buchHeader: {
+    borderRadius: 20,
+    padding: 24,
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  buchCharakter: { fontSize: 60, marginBottom: 8 },
+  buchTitel: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "white",
+    textAlign: "center",
+    fontStyle: "italic",
+  },
+  buchGenre: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
+  buchSeite: {
+    backgroundColor: "#FFFEF5",
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: "#FFD700",
+    marginBottom: 12,
+  },
+  anfuehrung: {
+    fontSize: 80,
+    color: "#FFD700",
+    lineHeight: 70,
+    marginBottom: -10,
+  },
+  buchText: {
+    fontSize: 18,
+    lineHeight: 32,
+    color: "#3D2B1F",
+    textAlign: "justify",
+  },
+  ende: {
+    textAlign: "center",
+    color: "#8B7355",
+    fontStyle: "italic",
+    fontSize: 16,
+    marginTop: 20,
+  },
+  neueButton: {
+    borderRadius: 20,
+    padding: 16,
+    alignItems: "center",
+    marginBottom: 30,
+  },
+  neueButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
+});

@@ -1,0 +1,247 @@
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+const GENRE_BILDER: Record<string, string> = {
+  Abenteuer:
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80",
+  Märchen:
+    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80",
+  Tiere:
+    "https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=600&q=80",
+  Weltraum:
+    "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=600&q=80",
+  Detektiv:
+    "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=600&q=80",
+};
+
+export default function HomeScreen(): React.JSX.Element {
+  const [alter, setAlter] = useState<string>("5");
+  const [akteure, setAkteure] = useState<string>("");
+  const [genre, setGenre] = useState<string>("Abenteuer");
+  const [geschichte, setGeschichte] = useState<string>("");
+  const [laedt, setLaedt] = useState<boolean>(false);
+
+  const genres: string[] = [
+    "Abenteuer",
+    "Märchen",
+    "Tiere",
+    "Weltraum",
+    "Detektiv",
+  ];
+
+  const generiereGeschichte = async (): Promise<void> => {
+    setLaedt(true);
+    setGeschichte("");
+    const prompt: string = `Schreibe eine Kindergeschichte auf Deutsch. Alter: ${alter} Jahre. Akteure: ${akteure || "ein kleines Kaninchen"}. Genre: ${genre}. Die Geschichte soll spannend, lehrreich und kindgerecht sein. Gib der Geschichte einen schönen Titel in der ersten Zeile mit ** darum, zum Beispiel **Der mutige Ritter**. Dann beginne direkt mit der Geschichte.`;
+    try {
+      const antwort = await fetch(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Bearer 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",
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 1000,
+          }),
+        },
+      );
+      const daten = await antwort.json();
+      const text: string = daten.choices[0].message.content;
+      setGeschichte(text);
+    } catch (fehler) {
+      setGeschichte("Ups! Da ist etwas schiefgelaufen. Versuche es nochmal.");
+    }
+    setLaedt(false);
+  };
+
+  const titel = geschichte.match(/\*\*(.*?)\*\*/)?.[1] || "";
+  const text = geschichte.replace(/\*\*(.*?)\*\*/, "").trim();
+
+  return (
+    <ScrollView style={styles.container}>
+      <Text style={styles.appTitel}>✨ Geschichten-Zauber</Text>
+
+      {!geschichte ? (
+        <View style={styles.formular}>
+          <Text style={styles.label}>Alter des Kindes</Text>
+          <TextInput
+            style={styles.input}
+            value={alter}
+            onChangeText={setAlter}
+            keyboardType="numeric"
+            placeholder="z.B. 5"
+          />
+
+          <Text style={styles.label}>Akteure</Text>
+          <TextInput
+            style={styles.input}
+            value={akteure}
+            onChangeText={setAkteure}
+            placeholder="z.B. ein tapferer Ritter und ein Drache"
+          />
+
+          <Text style={styles.label}>Genre</Text>
+          <View style={styles.chipReihe}>
+            {genres.map((g: string) => (
+              <TouchableOpacity
+                key={g}
+                style={[styles.chip, genre === g && styles.chipAktiv]}
+                onPress={() => setGenre(g)}
+              >
+                <Text
+                  style={genre === g ? styles.chipTextAktiv : styles.chipText}
+                >
+                  {g}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.button} onPress={generiereGeschichte}>
+            {laedt ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Geschichte erfinden! 🌟</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.buchSeite}>
+          <Image
+            source={{ uri: GENRE_BILDER[genre] }}
+            style={styles.bild}
+            resizeMode="cover"
+          />
+          <View style={styles.buchInhalt}>
+            <Text style={styles.buchTitel}>{titel}</Text>
+            <View style={styles.trennlinie} />
+            <Text style={styles.buchText}>{text}</Text>
+            <View style={styles.trennlinie} />
+            <Text style={styles.seitenZahl}>~ Ende ~</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.neueButton}
+            onPress={() => setGeschichte("")}
+          >
+            <Text style={styles.neueButtonText}>📖 Neue Geschichte</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#F5E6D0" },
+  appTitel: {
+    fontSize: 26,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginVertical: 20,
+    color: "#5C3317",
+  },
+  formular: { paddingHorizontal: 20, paddingBottom: 40 },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 16,
+    marginBottom: 6,
+    color: "#5C3317",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#C8A882",
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: "#FFFDF8",
+  },
+  chipReihe: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 8,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: "#C8A882",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#FFFDF8",
+  },
+  chipAktiv: { backgroundColor: "#8B4513", borderColor: "#8B4513" },
+  chipText: { color: "#5C3317" },
+  chipTextAktiv: { color: "white", fontWeight: "600" },
+  button: {
+    backgroundColor: "#8B4513",
+    borderRadius: 14,
+    padding: 16,
+    marginTop: 24,
+    alignItems: "center",
+  },
+  buttonText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  buchSeite: {
+    margin: 16,
+    backgroundColor: "#FFFDF5",
+    borderRadius: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+    borderLeftWidth: 6,
+    borderLeftColor: "#8B4513",
+  },
+  bild: {
+    width: "100%",
+    height: 200,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+  },
+  buchInhalt: { padding: 24 },
+  buchTitel: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    color: "#5C3317",
+    fontStyle: "italic",
+    marginBottom: 12,
+  },
+  trennlinie: { height: 1, backgroundColor: "#C8A882", marginVertical: 12 },
+  buchText: {
+    fontSize: 17,
+    lineHeight: 30,
+    color: "#3D2B1F",
+    fontFamily: "serif",
+    textAlign: "justify",
+  },
+  seitenZahl: {
+    textAlign: "center",
+    color: "#8B7355",
+    fontStyle: "italic",
+    marginTop: 8,
+  },
+  neueButton: {
+    margin: 20,
+    backgroundColor: "#8B4513",
+    borderRadius: 14,
+    padding: 14,
+    alignItems: "center",
+  },
+  neueButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
+});
